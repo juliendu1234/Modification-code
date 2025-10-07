@@ -684,6 +684,18 @@ class ARDroneController {
         sendCommand(atCommands.config(key: key, value: value))
     }
     
+    func setOutdoorMode(_ isOutdoor: Bool) {
+        let value = isOutdoor ? "TRUE" : "FALSE"
+        print("🌍 Setting outdoor mode: \(value)")
+        setConfig(key: "control:outdoor", value: value)
+    }
+    
+    func setHullConfiguration(_ hasHull: Bool) {
+        let value = hasHull ? "TRUE" : "FALSE"
+        print("🛡️ Setting hull configuration (flight_without_shell): \(value)")
+        setConfig(key: "control:flight_without_shell", value: value)
+    }
+    
     // MARK: - Video Commands
     
     func startVideoRecording() {

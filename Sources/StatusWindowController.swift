@@ -82,6 +82,10 @@ class StatusWindowController: NSWindowController {
     private let yawMaxSlider = NSSlider()
     private let yawMaxLabel = NSTextField(labelWithString: "Max Yaw: 3.0 rad/s (42%)")
     
+    // Configuration switches
+    private let outdoorSwitch = NSButton(checkboxWithTitle: "Vol extérieur", target: nil, action: nil)
+    private let hullSwitch = NSButton(checkboxWithTitle: "Carène extérieur", target: nil, action: nil)
+    
     private var saveLocationPathField: NSTextField?
     
     private let wifiClient = CWWiFiClient.shared()
@@ -507,6 +511,9 @@ class StatusWindowController: NSWindowController {
             (tempTitleLabel, tempValueLabel)
         ], in: container, x: 20 + colWidth * 3, y: startY, rowHeight: rowHeight)
         
+        // Add configuration switches below heading (column 3) and temp (column 4)
+        setupConfigurationSwitches(in: container, startY: startY + rowHeight * 4, colWidth: colWidth, rowHeight: rowHeight)
+        
         // Add control sliders section - now positioned after M4 (6th row) + 14px gap
         setupControlSliders(in: container, startY: startY + rowHeight * 6 + 14)
         
@@ -525,6 +532,41 @@ class StatusWindowController: NSWindowController {
                 value.centerYAnchor.constraint(equalTo: title.centerYAnchor)
             ])
         }
+    }
+    
+    private func setupConfigurationSwitches(in container: NSView, startY: CGFloat, colWidth: CGFloat, rowHeight: CGFloat) {
+        // Configure outdoor switch
+        outdoorSwitch.translatesAutoresizingMaskIntoConstraints = false
+        outdoorSwitch.setButtonType(.switch)
+        outdoorSwitch.title = "Vol extérieur"
+        outdoorSwitch.font = NSFont.systemFont(ofSize: 12, weight: .medium)
+        outdoorSwitch.state = .off  // Default to indoor mode (FALSE)
+        outdoorSwitch.target = self
+        outdoorSwitch.action = #selector(outdoorSwitchChanged(_:))
+        
+        // Configure hull switch
+        hullSwitch.translatesAutoresizingMaskIntoConstraints = false
+        hullSwitch.setButtonType(.switch)
+        hullSwitch.title = "Carène extérieur"
+        hullSwitch.font = NSFont.systemFont(ofSize: 12, weight: .medium)
+        hullSwitch.state = .off  // Default to without shell (FALSE)
+        hullSwitch.target = self
+        hullSwitch.action = #selector(hullSwitchChanged(_:))
+        
+        // Add to container
+        container.addSubview(outdoorSwitch)
+        container.addSubview(hullSwitch)
+        
+        // Layout constraints
+        // Outdoor switch: below heading in column 3
+        // Hull switch: below temp in column 4
+        NSLayoutConstraint.activate([
+            outdoorSwitch.topAnchor.constraint(equalTo: container.topAnchor, constant: startY + 5),
+            outdoorSwitch.leadingAnchor.constraint(equalTo: container.leadingAnchor, constant: 20 + colWidth * 2),
+            
+            hullSwitch.topAnchor.constraint(equalTo: container.topAnchor, constant: startY + 5),
+            hullSwitch.leadingAnchor.constraint(equalTo: container.leadingAnchor, constant: 20 + colWidth * 3)
+        ])
     }
     
     private func setupControlSliders(in container: NSView, startY: CGFloat) {
@@ -655,6 +697,18 @@ class StatusWindowController: NSWindowController {
         let percentage = Int((sender.doubleValue - sender.minValue) / (sender.maxValue - sender.minValue) * 100)
         yawMaxLabel.stringValue = String(format: "Max Yaw: %.1f rad/s (%d%%)", value, percentage)
         droneController.setConfig(key: "control:control_yaw", value: String(format: "%.2f", value))
+    }
+    
+    @objc private func outdoorSwitchChanged(_ sender: NSButton) {
+        let isOutdoor = sender.state == .on
+        print("🌍 Outdoor mode: \(isOutdoor ? "ON" : "OFF")")
+        droneController.setOutdoorMode(isOutdoor)
+    }
+    
+    @objc private func hullSwitchChanged(_ sender: NSButton) {
+        let hasHull = sender.state == .on
+        print("🛡️ Outdoor hull: \(hasHull ? "WITH" : "WITHOUT")")
+        droneController.setHullConfiguration(hasHull)
     }
     
     // Public methods for gamepad button control
