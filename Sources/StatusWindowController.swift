@@ -110,9 +110,16 @@ class StatusWindowController: NSWindowController {
         window.titleVisibility = .hidden
         window.collectionBehavior = [.fullScreenPrimary]
         
-        // Ensure window can receive keyboard events
+        // Ensure window can receive keyboard events and become key
         window.acceptsMouseMovedEvents = true
         window.isMovableByWindowBackground = false
+        
+        // Critical: Ensure window can become key to receive keyboard events
+        // Without this, text fields won't receive keyboard input
+        if let window = window as? NSWindow {
+            // Force window to accept first responder status
+            window.initialFirstResponder = nil
+        }
         
         loadPersistedSSID()
         setupUI()

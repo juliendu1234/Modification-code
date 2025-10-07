@@ -47,7 +47,9 @@ class AppDelegate: NSObject, NSApplicationDelegate, CLLocationManagerDelegate {
         gamepadManager?.setStatusWindowController(statusWindow!)
         
         // EMPÊCHER LA PERTE DE FOCUS - but only when necessary
-        statusWindow?.window?.level = .floating  // Toujours au-dessus
+        // Note: .floating level can prevent keyboard input to text fields
+        // Using .normal level for now to allow keyboard input
+        statusWindow?.window?.level = .normal
         statusWindow?.window?.collectionBehavior = [.canJoinAllSpaces, .fullScreenPrimary]
         
         // Monitor when text fields become first responder
@@ -55,7 +57,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, CLLocationManagerDelegate {
             forName: NSControl.textDidBeginEditingNotification,
             object: nil,
             queue: .main
-        ) { [weak self] notification in
+        ) { notification in
             print("⌨️ Text field editing began")
             // A text field started editing - ensure we maintain focus
         }
@@ -64,7 +66,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, CLLocationManagerDelegate {
             forName: NSControl.textDidEndEditingNotification,
             object: nil,
             queue: .main
-        ) { [weak self] notification in
+        ) { notification in
             print("⌨️ Text field editing ended")
         }
         
