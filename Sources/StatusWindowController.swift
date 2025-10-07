@@ -3,37 +3,6 @@ import AVFoundation
 import GameController
 import CoreWLAN
 
-/// Custom window that accepts keyboard events even when not key window
-/// This allows text field input to work even when the app loses focus
-class FocusRetainingWindow: NSWindow {
-    override var canBecomeKey: Bool {
-        return true
-    }
-    
-    override var canBecomeMain: Bool {
-        return true
-    }
-    
-    // Accept keyboard events even when not the key window
-    override func sendEvent(_ event: NSEvent) {
-        // Always process keyboard events normally first
-        // This is important to allow text fields to receive focus and input
-        
-        // Special handling only for when we're NOT key but have active text field
-        if !self.isKeyWindow && (event.type == .keyDown || event.type == .keyUp) {
-            if let firstResponder = self.firstResponder,
-               (firstResponder is NSText || firstResponder is NSTextField) {
-                // We're not key window but have active text field - process the event anyway
-                super.sendEvent(event)
-                return
-            }
-        }
-        
-        // Normal event processing for all other cases
-        super.sendEvent(event)
-    }
-}
-
 class StatusWindowController: NSWindowController {
     
     private let droneController: ARDroneController
@@ -127,7 +96,7 @@ class StatusWindowController: NSWindowController {
         
         let screen = NSScreen.main?.visibleFrame ?? NSRect(x: 0, y: 0, width: 1680, height: 1050)
         
-        let window = FocusRetainingWindow(
+        let window = NSWindow(
             contentRect: screen,
             styleMask: [.titled, .closable, .miniaturizable, .resizable, .fullSizeContentView],
             backing: .buffered,
@@ -140,6 +109,10 @@ class StatusWindowController: NSWindowController {
         window.titlebarAppearsTransparent = true
         window.titleVisibility = .hidden
         window.collectionBehavior = [.fullScreenPrimary]
+        
+        // Ensure window can receive keyboard events
+        window.acceptsMouseMovedEvents = true
+        window.isMovableByWindowBackground = false
         
         loadPersistedSSID()
         setupUI()
@@ -445,6 +418,11 @@ class StatusWindowController: NSWindowController {
         ssidField.bezelStyle = .roundedBezel
         ssidField.target = self
         ssidField.action = #selector(ssidFieldChanged(_:))
+        // Explicitly enable keyboard input
+        ssidField.isEditable = true
+        ssidField.isEnabled = true
+        ssidField.isSelectable = true
+        ssidField.refusesFirstResponder = false
         
         container.addSubview(title)
         container.addSubview(connectionDot)
@@ -1296,28 +1274,6 @@ class StatusWindowController: NSWindowController {
             self.modeValueLabel.stringValue = state
             self.modeValueLabel.textColor = .systemBlue
         }
-    }
-    
-    // MARK: - Keyboard Focus Management
-    
-    /// Check if any text field currently has focus (is being edited)
-    func hasActiveTextField() -> Bool {
-        guard let window = window,
-              let firstResponder = window.firstResponder else {
-            return false
-        }
-        
-        // Check if the first responder is a text field or a field editor for a text field
-        if firstResponder is NSText {
-            // NSText is the field editor used by NSTextField
-            if let textView = firstResponder as? NSTextView,
-               let delegate = textView.delegate as? NSTextField {
-                // We have an active text field being edited
-                return true
-            }
-        }
-        
-        return firstResponder is NSTextField
     }
 }
 

@@ -46,9 +46,27 @@ class AppDelegate: NSObject, NSApplicationDelegate, CLLocationManagerDelegate {
         // Pass statusWindow to gamepadManager for slider control
         gamepadManager?.setStatusWindowController(statusWindow!)
         
-        // EMPÊCHER LA PERTE DE FOCUS
+        // EMPÊCHER LA PERTE DE FOCUS - but only when necessary
         statusWindow?.window?.level = .floating  // Toujours au-dessus
         statusWindow?.window?.collectionBehavior = [.canJoinAllSpaces, .fullScreenPrimary]
+        
+        // Monitor when text fields become first responder
+        NotificationCenter.default.addObserver(
+            forName: NSControl.textDidBeginEditingNotification,
+            object: nil,
+            queue: .main
+        ) { [weak self] notification in
+            print("⌨️ Text field editing began")
+            // A text field started editing - ensure we maintain focus
+        }
+        
+        NotificationCenter.default.addObserver(
+            forName: NSControl.textDidEndEditingNotification,
+            object: nil,
+            queue: .main
+        ) { [weak self] notification in
+            print("⌨️ Text field editing ended")
+        }
         
         // Intercepter les tentatives de désactivation
         NSWorkspace.shared.notificationCenter.addObserver(
@@ -64,15 +82,9 @@ class AppDelegate: NSObject, NSApplicationDelegate, CLLocationManagerDelegate {
             if app.bundleIdentifier != Bundle.main.bundleIdentifier {
                 print("⚠️ Another app tried to take focus: \(app.localizedName ?? "Unknown")")
                 
-                // Si le drone vole OU si un champ de texte a le focus, garder le focus
-                let hasTextFieldFocus = self?.statusWindow?.hasActiveTextField() ?? false
-                if self?.droneController.isFlying() == true || hasTextFieldFocus {
-                    if self?.droneController.isFlying() == true {
-                        print("🚁 Drone is flying - Keeping focus")
-                    }
-                    if hasTextFieldFocus {
-                        print("⌨️  Text field is active - Keeping focus")
-                    }
+                // Si le drone vole, garder le focus
+                if self?.droneController.isFlying() == true {
+                    print("🚁 Drone is flying - Keeping focus")
                     NSApp.activate(ignoringOtherApps: true)
                 }
             }

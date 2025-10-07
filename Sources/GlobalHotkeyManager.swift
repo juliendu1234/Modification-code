@@ -3,9 +3,6 @@ import Carbon
 
 /// Global hotkey manager for emergency drone control
 /// Works even when app is in background
-/// 
-/// Note: This handles global keyboard shortcuts (Cmd+Shift+E, etc.)
-/// For text field keyboard input retention, see FocusRetainingWindow in StatusWindowController
 class GlobalHotkeyManager {
     
     private var eventHandler: EventHandlerRef?
