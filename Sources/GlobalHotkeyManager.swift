@@ -58,6 +58,7 @@ class GlobalHotkeyManager {
                         alert.addButton(withTitle: "OK")
                         alert.runModal()
                     }
+                    return noErr  // Event was handled
                     
                 case 2: // Reset Emergency
                     print("🔄 GLOBAL RESET HOTKEY (Cmd+Shift+R)")
@@ -73,16 +74,19 @@ class GlobalHotkeyManager {
                         alert.addButton(withTitle: "OK")
                         alert.runModal()
                     }
+                    return noErr  // Event was handled
                     
                 case 3: // Land
                     print("🛬 GLOBAL LAND HOTKEY (Cmd+Shift+L)")
                     controller.land()
+                    return noErr  // Event was handled
                     
                 default:
                     break
                 }
                 
-                return noErr
+                // Return eventNotHandledErr to allow other handlers to process the event
+                return eventNotHandledErr
             },
             1,
             &eventType,
