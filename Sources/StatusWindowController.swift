@@ -82,6 +82,10 @@ class StatusWindowController: NSWindowController {
     private let yawMaxSlider = NSSlider()
     private let yawMaxLabel = NSTextField(labelWithString: "Max Yaw: 3.0 rad/s (42%)")
     
+    // Configuration switches
+    private let flightModeControl = NSSegmentedControl()
+    private let hullSwitch = NSButton(checkboxWithTitle: "Carène extérieur", target: nil, action: nil)
+    
     private var saveLocationPathField: NSTextField?
     
     private let wifiClient = CWWiFiClient.shared()
@@ -507,6 +511,9 @@ class StatusWindowController: NSWindowController {
             (tempTitleLabel, tempValueLabel)
         ], in: container, x: 20 + colWidth * 3, y: startY, rowHeight: rowHeight)
         
+        // Add configuration switches below heading (column 3) and temp (column 4)
+        setupConfigurationSwitches(in: container, startY: startY + rowHeight * 4, colWidth: colWidth, rowHeight: rowHeight)
+        
         // Add control sliders section - now positioned after M4 (6th row) + 14px gap
         setupControlSliders(in: container, startY: startY + rowHeight * 6 + 14)
         
@@ -525,6 +532,43 @@ class StatusWindowController: NSWindowController {
                 value.centerYAnchor.constraint(equalTo: title.centerYAnchor)
             ])
         }
+    }
+    
+    private func setupConfigurationSwitches(in container: NSView, startY: CGFloat, colWidth: CGFloat, rowHeight: CGFloat) {
+        // Configure flight mode segmented control (Indoor/Outdoor)
+        flightModeControl.translatesAutoresizingMaskIntoConstraints = false
+        flightModeControl.segmentCount = 2
+        flightModeControl.setLabel("🏠 Vol intérieur", forSegment: 0)
+        flightModeControl.setLabel("🌍 Vol extérieur", forSegment: 1)
+        flightModeControl.setWidth(110, forSegment: 0)
+        flightModeControl.setWidth(110, forSegment: 1)
+        flightModeControl.selectedSegment = 0  // Default to indoor mode
+        flightModeControl.target = self
+        flightModeControl.action = #selector(flightModeChanged(_:))
+        
+        // Configure hull switch
+        hullSwitch.translatesAutoresizingMaskIntoConstraints = false
+        hullSwitch.setButtonType(.switch)
+        hullSwitch.title = "Carène extérieur"
+        hullSwitch.font = NSFont.systemFont(ofSize: 12, weight: .medium)
+        hullSwitch.state = .off  // Default to without shell (FALSE)
+        hullSwitch.target = self
+        hullSwitch.action = #selector(hullSwitchChanged(_:))
+        
+        // Add to container
+        container.addSubview(flightModeControl)
+        container.addSubview(hullSwitch)
+        
+        // Layout constraints
+        // Flight mode control: below heading in column 3
+        // Hull switch: below temp in column 4
+        NSLayoutConstraint.activate([
+            flightModeControl.topAnchor.constraint(equalTo: container.topAnchor, constant: startY + 5),
+            flightModeControl.leadingAnchor.constraint(equalTo: container.leadingAnchor, constant: 20 + colWidth * 2),
+            
+            hullSwitch.topAnchor.constraint(equalTo: container.topAnchor, constant: startY + 5),
+            hullSwitch.leadingAnchor.constraint(equalTo: container.leadingAnchor, constant: 20 + colWidth * 3)
+        ])
     }
     
     private func setupControlSliders(in container: NSView, startY: CGFloat) {
@@ -655,6 +699,49 @@ class StatusWindowController: NSWindowController {
         let percentage = Int((sender.doubleValue - sender.minValue) / (sender.maxValue - sender.minValue) * 100)
         yawMaxLabel.stringValue = String(format: "Max Yaw: %.1f rad/s (%d%%)", value, percentage)
         droneController.setConfig(key: "control:control_yaw", value: String(format: "%.2f", value))
+    }
+    
+    @objc private func flightModeChanged(_ sender: NSSegmentedControl) {
+        let isOutdoor = sender.selectedSegment == 1
+        print("🌍 Flight mode: \(isOutdoor ? "OUTDOOR" : "INDOOR")")
+        
+        // Set outdoor mode configuration
+        droneController.setOutdoorMode(isOutdoor)
+        
+        // Apply preset values based on mode and update UI sliders
+        // NOTE: To modify these preset values, edit the values below:
+        if isOutdoor {
+            // Outdoor mode presets (more aggressive for outdoor flight)
+            eulerAngleSlider.doubleValue = 0.2618  // 15 degrees (15 * π / 180)
+            altitudeMaxSlider.doubleValue = 10000  // 10 meters
+            vzMaxSlider.doubleValue = 1500  // 1.5 m/s
+            yawMaxSlider.doubleValue = 4.0  // 4.0 rad/s
+        } else {
+            // Indoor mode presets (more conservative for indoor flight)
+            eulerAngleSlider.doubleValue = 0.1396  // 8 degrees (8 * π / 180)
+            altitudeMaxSlider.doubleValue = 3000  // 3 meters
+            vzMaxSlider.doubleValue = 700  // 0.7 m/s
+            yawMaxSlider.doubleValue = 2.0  // 2.0 rad/s
+        }
+        
+        // Trigger the slider change handlers to update labels and send commands
+        eulerAngleChanged(eulerAngleSlider)
+        altitudeMaxChanged(altitudeMaxSlider)
+        vzMaxChanged(vzMaxSlider)
+        yawMaxChanged(yawMaxSlider)
+    }
+    
+    @objc private func hullSwitchChanged(_ sender: NSButton) {
+        // Hull configuration switch
+        // ON (checked) = Outdoor hull is attached (flight_without_shell = TRUE)
+        // OFF (unchecked) = Indoor hull is attached (flight_without_shell = FALSE)
+        //
+        // According to SDK: This setting adjusts the control loop parameters (PID gains)
+        // to account for the different weight and aerodynamic properties of each hull type.
+        // This is independent from indoor/outdoor flight mode setting.
+        let hasHull = sender.state == .on
+        print("🛡️ Outdoor hull: \(hasHull ? "WITH" : "WITHOUT")")
+        droneController.setHullConfiguration(hasHull)
     }
     
     // Public methods for gamepad button control
@@ -818,11 +905,14 @@ class StatusWindowController: NSWindowController {
         
         let pathField = NSTextField()
         pathField.translatesAutoresizingMaskIntoConstraints = false
-        pathField.isEditable = false
+        pathField.isEditable = true  // Allow manual editing
+        pathField.isSelectable = true
         pathField.isBordered = true
         pathField.bezelStyle = .roundedBezel
         pathField.font = NSFont.systemFont(ofSize: 12)
         pathField.placeholderString = "Sélectionner un dossier..."
+        pathField.target = self
+        pathField.action = #selector(pathFieldChanged(_:))
         
         // Load saved path or use default
         let defaultPath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0].path
@@ -879,6 +969,26 @@ class StatusWindowController: NSWindowController {
                     self?.droneController.videoHandler.setSaveLocation(url)
                     print("📁 Save location updated: \(path)")
                 }
+            }
+        }
+    }
+    
+    @objc private func pathFieldChanged(_ sender: NSTextField) {
+        let path = sender.stringValue.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !path.isEmpty else { return }
+        
+        // Validate the path exists
+        var isDirectory: ObjCBool = false
+        if FileManager.default.fileExists(atPath: path, isDirectory: &isDirectory), isDirectory.boolValue {
+            let url = URL(fileURLWithPath: path)
+            UserDefaults.standard.set(path, forKey: "SaveLocationPath")
+            droneController.videoHandler.setSaveLocation(url)
+            print("📁 Save location manually updated: \(path)")
+        } else {
+            print("⚠️ Invalid directory path: \(path)")
+            // Restore previous valid path
+            if let savedPath = UserDefaults.standard.string(forKey: "SaveLocationPath") {
+                sender.stringValue = savedPath
             }
         }
     }
