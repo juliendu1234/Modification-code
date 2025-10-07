@@ -709,17 +709,16 @@ class StatusWindowController: NSWindowController {
         droneController.setOutdoorMode(isOutdoor)
         
         // Apply preset values based on mode and update UI sliders
+        // NOTE: To modify these preset values, edit the values below:
         if isOutdoor {
             // Outdoor mode presets (more aggressive for outdoor flight)
-            // Based on AR.Drone SDK defaults for outdoor flight
-            eulerAngleSlider.doubleValue = 0.30  // ~17 degrees
-            altitudeMaxSlider.doubleValue = 5000  // 5 meters
-            vzMaxSlider.doubleValue = 1000  // 1.0 m/s
-            yawMaxSlider.doubleValue = 3.5  // 3.5 rad/s
+            eulerAngleSlider.doubleValue = 0.2618  // 15 degrees (15 * π / 180)
+            altitudeMaxSlider.doubleValue = 10000  // 10 meters
+            vzMaxSlider.doubleValue = 1500  // 1.5 m/s
+            yawMaxSlider.doubleValue = 4.0  // 4.0 rad/s
         } else {
             // Indoor mode presets (more conservative for indoor flight)
-            // Based on AR.Drone SDK defaults for indoor flight
-            eulerAngleSlider.doubleValue = 0.20  // ~11 degrees
+            eulerAngleSlider.doubleValue = 0.1396  // 8 degrees (8 * π / 180)
             altitudeMaxSlider.doubleValue = 3000  // 3 meters
             vzMaxSlider.doubleValue = 700  // 0.7 m/s
             yawMaxSlider.doubleValue = 2.0  // 2.0 rad/s
@@ -733,6 +732,13 @@ class StatusWindowController: NSWindowController {
     }
     
     @objc private func hullSwitchChanged(_ sender: NSButton) {
+        // Hull configuration switch
+        // ON (checked) = Outdoor hull is attached (flight_without_shell = TRUE)
+        // OFF (unchecked) = Indoor hull is attached (flight_without_shell = FALSE)
+        //
+        // According to SDK: This setting adjusts the control loop parameters (PID gains)
+        // to account for the different weight and aerodynamic properties of each hull type.
+        // This is independent from indoor/outdoor flight mode setting.
         let hasHull = sender.state == .on
         print("🛡️ Outdoor hull: \(hasHull ? "WITH" : "WITHOUT")")
         droneController.setHullConfiguration(hasHull)

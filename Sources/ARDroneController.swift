@@ -691,6 +691,17 @@ class ARDroneController {
     }
     
     func setHullConfiguration(_ hasHull: Bool) {
+        // According to AR.Drone SDK documentation:
+        // control:flight_without_shell tells the control loop about hull configuration
+        // TRUE = flying with outdoor hull (without indoor shell)
+        // FALSE = flying with indoor hull (indoor shell present)
+        // 
+        // The SDK adjusts internal control parameters based on this setting:
+        // - With outdoor hull (TRUE): Different PID gains for heavier, more aerodynamic configuration
+        // - With indoor hull (FALSE): Different PID gains for lighter, indoor-optimized configuration
+        //
+        // Note: This setting is independent from control:outdoor (indoor/outdoor flight mode)
+        // They affect different aspects of the control loop
         let value = hasHull ? "TRUE" : "FALSE"
         print("🛡️ Setting hull configuration (flight_without_shell): \(value)")
         setConfig(key: "control:flight_without_shell", value: value)
