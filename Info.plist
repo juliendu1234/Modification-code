@@ -42,5 +42,17 @@
     <true/>
     <key>com.apple.security.device.wifi</key>
     <true/>
+    <key>NSCameraUsageDescription</key>
+    <string>This app needs camera access to display video stream from the AR.Drone.</string>
+    <key>NSMicrophoneUsageDescription</key>
+    <string>This app may need microphone access for video recording features.</string>
+    <key>NSPhotoLibraryUsageDescription</key>
+    <string>This app needs access to save photos and videos captured from the AR.Drone.</string>
+    <key>NSPhotoLibraryAddUsageDescription</key>
+    <string>This app needs permission to save photos and videos captured from the AR.Drone to your Photos library.</string>
+    <key>com.apple.security.files.user-selected.read-write</key>
+    <true/>
+    <key>com.apple.security.files.downloads.read-write</key>
+    <true/>
 </dict>
 </plist>
