@@ -540,8 +540,8 @@ class StatusWindowController: NSWindowController {
         flightModeControl.segmentCount = 2
         flightModeControl.setLabel("🏠 Vol intérieur", forSegment: 0)
         flightModeControl.setLabel("🌍 Vol extérieur", forSegment: 1)
-        flightModeControl.setWidth(140, forSegment: 0)
-        flightModeControl.setWidth(140, forSegment: 1)
+        flightModeControl.setWidth(110, forSegment: 0)
+        flightModeControl.setWidth(110, forSegment: 1)
         flightModeControl.selectedSegment = 0  // Default to indoor mode
         flightModeControl.target = self
         flightModeControl.action = #selector(flightModeChanged(_:))
