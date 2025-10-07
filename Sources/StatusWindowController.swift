@@ -905,11 +905,14 @@ class StatusWindowController: NSWindowController {
         
         let pathField = NSTextField()
         pathField.translatesAutoresizingMaskIntoConstraints = false
-        pathField.isEditable = false
+        pathField.isEditable = true  // Allow manual editing
+        pathField.isSelectable = true
         pathField.isBordered = true
         pathField.bezelStyle = .roundedBezel
         pathField.font = NSFont.systemFont(ofSize: 12)
         pathField.placeholderString = "Sélectionner un dossier..."
+        pathField.target = self
+        pathField.action = #selector(pathFieldChanged(_:))
         
         // Load saved path or use default
         let defaultPath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0].path
@@ -966,6 +969,26 @@ class StatusWindowController: NSWindowController {
                     self?.droneController.videoHandler.setSaveLocation(url)
                     print("📁 Save location updated: \(path)")
                 }
+            }
+        }
+    }
+    
+    @objc private func pathFieldChanged(_ sender: NSTextField) {
+        let path = sender.stringValue.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !path.isEmpty else { return }
+        
+        // Validate the path exists
+        var isDirectory: ObjCBool = false
+        if FileManager.default.fileExists(atPath: path, isDirectory: &isDirectory), isDirectory.boolValue {
+            let url = URL(fileURLWithPath: path)
+            UserDefaults.standard.set(path, forKey: "SaveLocationPath")
+            droneController.videoHandler.setSaveLocation(url)
+            print("📁 Save location manually updated: \(path)")
+        } else {
+            print("⚠️ Invalid directory path: \(path)")
+            // Restore previous valid path
+            if let savedPath = UserDefaults.standard.string(forKey: "SaveLocationPath") {
+                sender.stringValue = savedPath
             }
         }
     }
