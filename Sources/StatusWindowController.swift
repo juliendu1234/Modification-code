@@ -16,14 +16,20 @@ class FocusRetainingWindow: NSWindow {
     
     // Accept keyboard events even when not the key window
     override func sendEvent(_ event: NSEvent) {
-        // For keyboard events, always process them if we have an active text field
-        if event.type == .keyDown || event.type == .keyUp {
+        // Always process keyboard events normally first
+        // This is important to allow text fields to receive focus and input
+        
+        // Special handling only for when we're NOT key but have active text field
+        if !self.isKeyWindow && (event.type == .keyDown || event.type == .keyUp) {
             if let firstResponder = self.firstResponder,
                (firstResponder is NSText || firstResponder is NSTextField) {
+                // We're not key window but have active text field - process the event anyway
                 super.sendEvent(event)
                 return
             }
         }
+        
+        // Normal event processing for all other cases
         super.sendEvent(event)
     }
 }
