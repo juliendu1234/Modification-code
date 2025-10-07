@@ -64,9 +64,15 @@ class AppDelegate: NSObject, NSApplicationDelegate, CLLocationManagerDelegate {
             if app.bundleIdentifier != Bundle.main.bundleIdentifier {
                 print("⚠️ Another app tried to take focus: \(app.localizedName ?? "Unknown")")
                 
-                // Si le drone vole, garder le focus
-                if self?.droneController.isFlying() == true {
-                    print("🚁 Drone is flying - Keeping focus")
+                // Si le drone vole OU si un champ de texte a le focus, garder le focus
+                let hasTextFieldFocus = self?.statusWindow?.hasActiveTextField() ?? false
+                if self?.droneController.isFlying() == true || hasTextFieldFocus {
+                    if self?.droneController.isFlying() == true {
+                        print("🚁 Drone is flying - Keeping focus")
+                    }
+                    if hasTextFieldFocus {
+                        print("⌨️  Text field is active - Keeping focus")
+                    }
                     NSApp.activate(ignoringOtherApps: true)
                 }
             }

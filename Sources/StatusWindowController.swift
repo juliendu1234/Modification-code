@@ -1266,6 +1266,28 @@ class StatusWindowController: NSWindowController {
             self.modeValueLabel.textColor = .systemBlue
         }
     }
+    
+    // MARK: - Keyboard Focus Management
+    
+    /// Check if any text field currently has focus (is being edited)
+    func hasActiveTextField() -> Bool {
+        guard let window = window,
+              let firstResponder = window.firstResponder else {
+            return false
+        }
+        
+        // Check if the first responder is a text field or a field editor for a text field
+        if firstResponder is NSText {
+            // NSText is the field editor used by NSTextField
+            if let textView = firstResponder as? NSTextView,
+               let delegate = textView.delegate as? NSTextField {
+                // We have an active text field being edited
+                return true
+            }
+        }
+        
+        return firstResponder is NSTextField
+    }
 }
 
 // MARK: - Gamepad Visualizer View
