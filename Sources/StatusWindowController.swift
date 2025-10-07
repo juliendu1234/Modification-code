@@ -3,6 +3,31 @@ import AVFoundation
 import GameController
 import CoreWLAN
 
+/// Custom window that accepts keyboard events even when not key window
+/// This allows text field input to work even when the app loses focus
+class FocusRetainingWindow: NSWindow {
+    override var canBecomeKey: Bool {
+        return true
+    }
+    
+    override var canBecomeMain: Bool {
+        return true
+    }
+    
+    // Accept keyboard events even when not the key window
+    override func sendEvent(_ event: NSEvent) {
+        // For keyboard events, always process them if we have an active text field
+        if event.type == .keyDown || event.type == .keyUp {
+            if let firstResponder = self.firstResponder,
+               (firstResponder is NSText || firstResponder is NSTextField) {
+                super.sendEvent(event)
+                return
+            }
+        }
+        super.sendEvent(event)
+    }
+}
+
 class StatusWindowController: NSWindowController {
     
     private let droneController: ARDroneController
@@ -96,7 +121,7 @@ class StatusWindowController: NSWindowController {
         
         let screen = NSScreen.main?.visibleFrame ?? NSRect(x: 0, y: 0, width: 1680, height: 1050)
         
-        let window = NSWindow(
+        let window = FocusRetainingWindow(
             contentRect: screen,
             styleMask: [.titled, .closable, .miniaturizable, .resizable, .fullSizeContentView],
             backing: .buffered,
