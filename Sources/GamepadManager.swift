@@ -11,6 +11,9 @@ import GameController
 import IOKit.hid
 
 /// Manages DualShock 4 controller input with global background monitoring
+/// Uses IOHIDManager to receive gamepad input even when app is in background
+/// 
+/// Note: For keyboard input retention in text fields, see FocusRetainingWindow in StatusWindowController
 class GamepadManager {
     
     private let droneController: ARDroneController
