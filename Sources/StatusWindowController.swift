@@ -83,7 +83,7 @@ class StatusWindowController: NSWindowController {
     private let yawMaxLabel = NSTextField(labelWithString: "Max Yaw: 3.0 rad/s (42%)")
     
     // Configuration switches
-    private let outdoorSwitch = NSButton(checkboxWithTitle: "Vol extérieur", target: nil, action: nil)
+    private let flightModeControl = NSSegmentedControl()
     private let hullSwitch = NSButton(checkboxWithTitle: "Carène extérieur", target: nil, action: nil)
     
     private var saveLocationPathField: NSTextField?
@@ -535,14 +535,16 @@ class StatusWindowController: NSWindowController {
     }
     
     private func setupConfigurationSwitches(in container: NSView, startY: CGFloat, colWidth: CGFloat, rowHeight: CGFloat) {
-        // Configure outdoor switch
-        outdoorSwitch.translatesAutoresizingMaskIntoConstraints = false
-        outdoorSwitch.setButtonType(.switch)
-        outdoorSwitch.title = "Vol extérieur"
-        outdoorSwitch.font = NSFont.systemFont(ofSize: 12, weight: .medium)
-        outdoorSwitch.state = .off  // Default to indoor mode (FALSE)
-        outdoorSwitch.target = self
-        outdoorSwitch.action = #selector(outdoorSwitchChanged(_:))
+        // Configure flight mode segmented control (Indoor/Outdoor)
+        flightModeControl.translatesAutoresizingMaskIntoConstraints = false
+        flightModeControl.segmentCount = 2
+        flightModeControl.setLabel("🏠 Vol intérieur", forSegment: 0)
+        flightModeControl.setLabel("🌍 Vol extérieur", forSegment: 1)
+        flightModeControl.setWidth(140, forSegment: 0)
+        flightModeControl.setWidth(140, forSegment: 1)
+        flightModeControl.selectedSegment = 0  // Default to indoor mode
+        flightModeControl.target = self
+        flightModeControl.action = #selector(flightModeChanged(_:))
         
         // Configure hull switch
         hullSwitch.translatesAutoresizingMaskIntoConstraints = false
@@ -554,15 +556,15 @@ class StatusWindowController: NSWindowController {
         hullSwitch.action = #selector(hullSwitchChanged(_:))
         
         // Add to container
-        container.addSubview(outdoorSwitch)
+        container.addSubview(flightModeControl)
         container.addSubview(hullSwitch)
         
         // Layout constraints
-        // Outdoor switch: below heading in column 3
+        // Flight mode control: below heading in column 3
         // Hull switch: below temp in column 4
         NSLayoutConstraint.activate([
-            outdoorSwitch.topAnchor.constraint(equalTo: container.topAnchor, constant: startY + 5),
-            outdoorSwitch.leadingAnchor.constraint(equalTo: container.leadingAnchor, constant: 20 + colWidth * 2),
+            flightModeControl.topAnchor.constraint(equalTo: container.topAnchor, constant: startY + 5),
+            flightModeControl.leadingAnchor.constraint(equalTo: container.leadingAnchor, constant: 20 + colWidth * 2),
             
             hullSwitch.topAnchor.constraint(equalTo: container.topAnchor, constant: startY + 5),
             hullSwitch.leadingAnchor.constraint(equalTo: container.leadingAnchor, constant: 20 + colWidth * 3)
@@ -699,10 +701,35 @@ class StatusWindowController: NSWindowController {
         droneController.setConfig(key: "control:control_yaw", value: String(format: "%.2f", value))
     }
     
-    @objc private func outdoorSwitchChanged(_ sender: NSButton) {
-        let isOutdoor = sender.state == .on
-        print("🌍 Outdoor mode: \(isOutdoor ? "ON" : "OFF")")
+    @objc private func flightModeChanged(_ sender: NSSegmentedControl) {
+        let isOutdoor = sender.selectedSegment == 1
+        print("🌍 Flight mode: \(isOutdoor ? "OUTDOOR" : "INDOOR")")
+        
+        // Set outdoor mode configuration
         droneController.setOutdoorMode(isOutdoor)
+        
+        // Apply preset values based on mode and update UI sliders
+        if isOutdoor {
+            // Outdoor mode presets (more aggressive for outdoor flight)
+            // Based on AR.Drone SDK defaults for outdoor flight
+            eulerAngleSlider.doubleValue = 0.30  // ~17 degrees
+            altitudeMaxSlider.doubleValue = 5000  // 5 meters
+            vzMaxSlider.doubleValue = 1000  // 1.0 m/s
+            yawMaxSlider.doubleValue = 3.5  // 3.5 rad/s
+        } else {
+            // Indoor mode presets (more conservative for indoor flight)
+            // Based on AR.Drone SDK defaults for indoor flight
+            eulerAngleSlider.doubleValue = 0.20  // ~11 degrees
+            altitudeMaxSlider.doubleValue = 3000  // 3 meters
+            vzMaxSlider.doubleValue = 700  // 0.7 m/s
+            yawMaxSlider.doubleValue = 2.0  // 2.0 rad/s
+        }
+        
+        // Trigger the slider change handlers to update labels and send commands
+        eulerAngleChanged(eulerAngleSlider)
+        altitudeMaxChanged(altitudeMaxSlider)
+        vzMaxChanged(vzMaxSlider)
+        yawMaxChanged(yawMaxSlider)
     }
     
     @objc private func hullSwitchChanged(_ sender: NSButton) {
