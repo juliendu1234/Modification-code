@@ -110,6 +110,17 @@ class StatusWindowController: NSWindowController {
         window.titleVisibility = .hidden
         window.collectionBehavior = [.fullScreenPrimary]
         
+        // Ensure window can receive keyboard events and become key
+        window.acceptsMouseMovedEvents = true
+        window.isMovableByWindowBackground = false
+        
+        // Critical: Ensure window can become key to receive keyboard events
+        // Without this, text fields won't receive keyboard input
+        if let window = window as? NSWindow {
+            // Force window to accept first responder status
+            window.initialFirstResponder = nil
+        }
+        
         loadPersistedSSID()
         setupUI()
         setupCallbacks()
@@ -414,6 +425,11 @@ class StatusWindowController: NSWindowController {
         ssidField.bezelStyle = .roundedBezel
         ssidField.target = self
         ssidField.action = #selector(ssidFieldChanged(_:))
+        // Explicitly enable keyboard input
+        ssidField.isEditable = true
+        ssidField.isEnabled = true
+        ssidField.isSelectable = true
+        ssidField.refusesFirstResponder = false
         
         container.addSubview(title)
         container.addSubview(connectionDot)

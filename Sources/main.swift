@@ -43,12 +43,35 @@ class AppDelegate: NSObject, NSApplicationDelegate, CLLocationManagerDelegate {
         statusWindow = StatusWindowController(droneController: droneController)
         statusWindow?.window?.makeKeyAndOrderFront(nil)
         
+        // Activate the application to ensure it can receive keyboard events
+        NSApp.activate(ignoringOtherApps: true)
+        
         // Pass statusWindow to gamepadManager for slider control
         gamepadManager?.setStatusWindowController(statusWindow!)
         
-        // EMPÊCHER LA PERTE DE FOCUS
-        statusWindow?.window?.level = .floating  // Toujours au-dessus
+        // EMPÊCHER LA PERTE DE FOCUS - but only when necessary
+        // Note: .floating level can prevent keyboard input to text fields
+        // Using .normal level for now to allow keyboard input
+        statusWindow?.window?.level = .normal
         statusWindow?.window?.collectionBehavior = [.canJoinAllSpaces, .fullScreenPrimary]
+        
+        // Monitor when text fields become first responder
+        NotificationCenter.default.addObserver(
+            forName: NSControl.textDidBeginEditingNotification,
+            object: nil,
+            queue: .main
+        ) { notification in
+            print("⌨️ Text field editing began")
+            // A text field started editing - ensure we maintain focus
+        }
+        
+        NotificationCenter.default.addObserver(
+            forName: NSControl.textDidEndEditingNotification,
+            object: nil,
+            queue: .main
+        ) { notification in
+            print("⌨️ Text field editing ended")
+        }
         
         // Intercepter les tentatives de désactivation
         NSWorkspace.shared.notificationCenter.addObserver(
@@ -129,6 +152,10 @@ class AppDelegate: NSObject, NSApplicationDelegate, CLLocationManagerDelegate {
 let app = NSApplication.shared
 let delegate = AppDelegate()
 app.delegate = delegate
+
+// Set activation policy to regular app (can appear in Dock and receive keyboard focus)
+// This is CRITICAL for keyboard input to work in text fields
+app.setActivationPolicy(.regular)
 
 // Empêcher la mise en veille pendant l'utilisation
 ProcessInfo.processInfo.beginActivity(
